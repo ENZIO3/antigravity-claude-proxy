@@ -98,7 +98,7 @@ export const ANTIGRAVITY_DB_PATH = getAntigravityDbPath();
 export const DEFAULT_COOLDOWN_MS = config?.defaultCooldownMs || (10 * 1000); // From config or 10 seconds
 export const MAX_RETRIES = config?.maxRetries || 5; // From config or 5
 export const MAX_EMPTY_RESPONSE_RETRIES = 2; // Max retries for empty API responses (from upstream)
-export const MAX_ACCOUNTS = config?.maxAccounts || 10; // From config or 10
+export const MAX_ACCOUNTS = config?.maxAccounts || 100; // From config or 100
 
 // Rate limit wait thresholds
 export const MAX_WAIT_BEFORE_ERROR_MS = config?.maxWaitBeforeErrorMs || 120000; // From config or 2 minutes
