@@ -15,43 +15,9 @@ import time
 #   3. Hallucinations -> Properly handles SSE streams with :dummy keep-alive
 #   4. Writing Feedback -> Properly parses SSE/streaming responses
 #   5. AI Reviewer  -> Fixed payload (removed invalid template ID)
-#
-# SETUP:
-#   Set your GPTZero cookie in one of these ways:
-#     1. Environment variable: export GPTZERO_COOKIE="your_cookie_here"
-#     2. Cookie file: paste your cookie into ~/.gptzero_cookie
 # ==============================================================================
 
-def load_cookie():
-    """Load cookie from environment variable or file"""
-    cookie = os.environ.get('GPTZERO_COOKIE', '').strip()
-    if cookie:
-        return cookie
-
-    cookie_file = os.path.expanduser('~/.gptzero_cookie')
-    if os.path.exists(cookie_file):
-        with open(cookie_file, 'r') as f:
-            cookie = f.read().strip()
-        if cookie:
-            return cookie
-
-    print("=" * 55)
-    print("  GPTZERO COOKIE NOT FOUND!")
-    print("=" * 55)
-    print("\n  Set it up using ONE of these methods:\n")
-    print("  Method 1 - Environment Variable:")
-    print('    export GPTZERO_COOKIE="your_cookie_string"')
-    print("\n  Method 2 - Cookie File:")
-    print("    Paste your cookie into: ~/.gptzero_cookie")
-    print("\n  To get your cookie:")
-    print("    1. Login to app.gptzero.me in Chrome")
-    print("    2. Open DevTools (F12) -> Network tab")
-    print("    3. Make any scan request")
-    print("    4. Copy the 'cookie' header from the request")
-    print("=" * 55)
-    sys.exit(1)
-
-COOKIE = load_cookie()
+COOKIE = "_ca_device_id=ca_2d26b340-94a6-410f-8b9e-b605ab42fca2; _gcl_au=1.1.2113670099.1770888129; AMP_MKTG_8f1ede8e9c=JTdCJTIycmVmZXJyZXIlMjIlM0ElMjJodHRwcyUzQSUyRiUyRnd3dy5nb29nbGUuY29tJTJGJTIyJTJDJTIycmVmZXJyaW5nX2RvbWFpbiUyMiUzQSUyMnd3dy5nb29nbGUuY29tJTIyJTdE; _fbp=fb.1.1770888130058.552936954255985546; _hjSession_3701535=eyJpZCI6ImFjN2JkNDdhLTI3Y2QtNDIzOC1hNGRjLTA3OGE2YmVlNDE1YSIsImMiOjE3NzA4ODgxMzAyNzcsInMiOjAsInIiOjAsInNiIjowLCJzciI6MCwic2UiOjAsImZzIjoxLCJzcCI6MH0=; hubspotutk=319ed4e4fc725e3e8a38082735d0443c; _ga=GA1.1.1299419126.1770888135; _hjSessionUser_3701535=eyJpZCI6IjFjMWI3MjdlLWI4MWYtNTdmNC1iNGE2LTkxY2M3YzQ2ZjNiZCIsImNyZWF0ZWQiOjE3NzA4ODgxMzAyNzAsImV4aXN0aW5nIjp0cnVlfQ==; accessToken4=eyJhbGciOiJIUzI1NiIsImtpZCI6IkxQUGtRbDRKRlQvcmY5VkoiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2x5ZHFoZ2R6aHZzcWxjb2JkZnhpLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiJkY2VjNjYyNC01ZDAwLTQ3MzUtODAyZC1iZGFjOWY1MjMxYWMiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzcxNDkzMDg1LCJpYXQiOjE3NzA4ODgzMTgsImVtYWlsIjoiYWlkZXRlY3RvcjkxMkBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6Imdvb2dsZSIsInByb3ZpZGVycyI6WyJnb29nbGUiXX0sInVzZXJfbWV0YWRhdGEiOnsiYXZhdGFyX3VybCI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FDZzhvY0ppd1o2eUtIdVdfMFM0RnZHUS16aF9xZDY2UUZDaUtuYllYb3NSbDY2OVlhSTFNdz1zOTYtYyIsImVtYWlsIjoiYWlkZXRlY3RvcjkxMkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiZnVsbF9uYW1lIjoiQUkgRGV0ZWN0b3IiLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJuYW1lIjoiQUkgRGV0ZWN0b3IiLCJwaG9uZV92ZXJpZmllZCI6ZmFsc2UsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NKaXdaNnlLSHVXXzBTNEZ2R1EtemhfcWQ2NlFGQ2lLbmJZWG9zUmw2NjlZYUkxTXc9czk2LWMiLCJwcm92aWRlcl9pZCI6IjEwMjgyNTI5NjEwMzAwNjkwMjAyNSIsInN1YiI6IjEwMjgyNTI5NjEwMzAwNjkwMjAyNSJ9LCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImFhbCI6ImFhbDEiLCJhbXIiOlt7Im1ldGhvZCI6Im9hdXRoIiwidGltZXN0YW1wIjoxNzcwODg4MzE4fV0sInNlc3Npb25faWQiOiI1OTUxZmI1NS0zZDVkLTRhY2EtOWQ5OS1mNjEwNmMyOWFiODEiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.WCrHS4d-wRcPdNS5RpUOlCMP2rBaGFgeYFLdiW89Rnk; plan=Premium; __hstc=72891980.319ed4e4fc725e3e8a38082735d0443c.1770888131569.1770888131569.1770891687678.2; __hssrc=1; _ga_Z6QQHT52V9=GS2.1.s1770888135$o1$g1$t1770895380$j60$l0$h0; __hssc=72891980.12.1770891687678; AMP_8f1ede8e9c=JTdCJTIyZGV2aWNlSWQlMjIlM0ElMjJudWxsJTIyJTJDJTIydXNlcklkJTIyJTNBJTIyZGNlYzY2MjQtNWQwMC00NzM1LTgwMmQtYmRhYzlmNTIzMWFjJTIyJTJDJTIyc2Vzc2lvbklkJTIyJTNBMTc3MDg4ODEyOTg2NSUyQyUyMm9wdE91dCUyMiUzQWZhbHNlJTJDJTIybGFzdEV2ZW50VGltZSUyMiUzQTE3NzA4OTU0MTI1NzElMkMlMjJsYXN0RXZlbnRJZCUyMiUzQTEzMyUyQyUyMnBhZ2VDb3VudGVyJTIyJTNBMjglN0Q="
 
 HEADERS = {
     "authority": "api.gptzero.me",
